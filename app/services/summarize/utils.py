@@ -1,0 +1,185 @@
+from typing import List, Dict, Any
+from datetime import datetime
+from pathlib import Path
+import requests
+import re
+import weasyprint
+
+def pull_model(model_name: str, host: str) -> None:
+    """
+    Pull a model from an Ollama server.
+
+    Args:
+        model_name (str): Name of the model to pull.
+        host (str): URL of the Ollama server.
+    """
+    url = f"{host}/api/pull"
+    resp = requests.post(url, json={"name": model_name}, stream=True)
+    for line in resp.iter_lines():
+        if line:
+            print(line.decode("utf-8"))
+            
+class DocumentGenerator:
+    """Handles generation of PDF documents from summarization results."""
+    
+    def __init__(self, output_dir: str = "./output"):
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(exist_ok=True)
+        self.basic_colors = [
+            "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
+            "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
+            "#bcbd22", "#17becf"
+        ]
+  
+    
+    def generate_pdf(self, result: Dict[str, Any], filename: str = None) -> str:
+        """Generate PDF document from summarization result."""
+        
+        if filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"summary_{timestamp}.pdf"
+        
+        filepath = self.output_dir / filename
+        
+        self._create_pdf_weasyprint(result, str(filepath))
+        
+        return str(filepath)
+   
+    
+    def _create_pdf_weasyprint(self, result: Dict[str, Any], filepath: str):
+        """Create PDF using WeasyPrint (HTML to PDF)."""
+        
+        # Generate HTML content
+        html_content = self._create_html_content(result)
+        
+        # Convert to PDF
+        weasyprint.HTML(string=html_content).write_pdf(filepath)
+    
+    def _create_html_content(self, result: Dict[str, Any]) -> str:
+        """Create HTML content for WeasyPrint PDF generation."""
+        
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        status = result.get('status', 'unknown')
+
+        topics = self._format_list_as_html(result.get('topics', []), 'No topics identified')
+        decisions = self._format_list_as_html(result.get('decisions', []), 'No decisions recorded')
+        actions = self._format_list_as_html(result.get('actions', []), 'No action items identified')
+
+        turns = result.get('turns', [])
+        speakers = set(t.speaker for t in turns)
+        speakers_colors = {s: self.basic_colors[i % len(self.basic_colors)] for i, s in enumerate(speakers)}
+
+        summary = result.get('summary', '')
+        summary = self._format_summary_as_html(summary, speakers_colors)
+
+        transcript = self._format_conversation_as_html(turns, speakers_colors, "No transcript recorded")
+
+        html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Conversation Summary Report</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
+                    h1 {{ color: #2c3e50; text-align: center; border-bottom: 3px solid #3498db; padding-bottom: 10px; }}
+                    h2 {{ color: #2c3e50; border-left: 4px solid #3498db; padding-left: 10px; }}
+                    .metadata {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
+                    .summary-section {{ margin-bottom: 30px; }}
+                    ul {{ padding-left: 20px; }}
+                    li {{ margin-bottom: 5px; }}
+                    table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
+                    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                    th {{ background-color: #f2f2f2; font-weight: bold; }}
+                    .timestamp {{ font-family: monospace; }}
+                    .footer {{ margin-top: 50px; text-align: center; font-style: italic; color: #7f8c8d; }}
+                </style>
+            </head>
+            <body>
+                <h1>Conversation Summary Report</h1>
+                
+                <div class="metadata">
+                    <p><strong>Generated:</strong> {timestamp}</p>
+                    <p><strong>Status:</strong> {status}</p>
+                </div>
+                
+                <div class="summary-section">
+                    <h2>Executive Summary</h2>
+                    <p>{summary}</p>
+                </div>
+                
+                <div class="summary-section">
+                    <h2>Key Topics Discussed</h2>
+                    {topics}
+                </div>
+                
+                <div class="summary-section">
+                    <h2>Decisions Made</h2>
+                    {decisions}
+                </div>
+                
+                <div class="summary-section">
+                    <h2>Action Items</h2>
+                    {actions}
+                </div>
+                
+                <div class="summary-section">
+                    <h2>Full Transcript</h2>
+                    <p>{transcript}</p>
+                </div>
+                
+                <div class="footer">
+                    <p>This report was generated by the Summarization Agent</p>
+                </div>
+            </body>
+            </html>
+        """
+        return html_content
+
+    def _format_conversation_as_html(
+        self, items: List[Any], speakers_colors: Dict[str, str], empty_message: str
+    ) -> str:
+        """Format conversation list items as HTML with colored speakers."""
+        if not items:
+            return f"<p>{empty_message}</p>"
+
+        html_items = ""
+        for item in items:
+            color = speakers_colors.get(item.speaker, "#000000")  # default black
+            speaker_html = f'<span style="color:{color}; font-weight:bold;">{item.speaker}</span>'
+            html_items += f"<li>[<b>{item.start:.2f}</b>-<b>{item.end:.2f}</b>] - {speaker_html} : {item.text}</li>"
+
+        return f"<ul>{html_items}</ul>"
+    
+    def _format_summary_as_html(self, summary: str, speakers_colors: Dict[str, str]) -> str:
+        """
+        Format summary string as HTML and color speaker mentions.
+
+        Args:
+            summary: the full summary text where speaker names appear
+            speakers_colors: mapping from speaker name to hex color
+
+        Returns:
+            HTML-formatted string with colored speaker names
+        """
+        def color_speaker(match):
+            speaker = match.group(0)
+            color = speakers_colors.get(speaker, "#000000")  # default black if missing
+            return f'<span style="color:{color}; font-weight:bold;">{speaker}</span>'
+
+        # create regex to match any speaker name
+        if not speakers_colors:
+            return summary
+
+        pattern = r'\b(' + '|'.join(re.escape(s) for s in speakers_colors.keys()) + r')\b'
+        html_summary = re.sub(pattern, color_speaker, summary)
+
+        return html_summary
+   
+    def _format_list_as_html(self, items: List[Any], empty_message: str) -> str:
+        """Format list items as HTML."""
+        if not items:
+            return f"<p>{empty_message}</p>"
+        html_items = ''.join([f"<li>{item.text} - [<b>{item.start:.2f}</b>-<b>{item.end:.2f}</b>]</li>" for item in items])
+        return f"<ul>{html_items}</ul>"
+    
