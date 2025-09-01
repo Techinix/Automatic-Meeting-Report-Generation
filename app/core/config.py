@@ -11,7 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     """Application settings class."""
-
+    # Project 
     PROJECT_NAME: str = "FastAPI API"
     PROJECT_DESCRIPTION: str = "FastAPI template"
     VERSION: str = "0.1.0"
@@ -75,7 +75,10 @@ class Settings(BaseSettings):
             return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}-test"
         return f"{self.DB_ENGINE}://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}-test"
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="allow")
+
+
 
 
 settings = Settings()
