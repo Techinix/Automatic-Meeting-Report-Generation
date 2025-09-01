@@ -3,8 +3,60 @@ version: "3.8"
 services:
   web:
     build: .
-    command: ./start.sh
-    volumes:
-      - .:/app
+    command: ./start-dev.sh
     ports:
       - "8000:8000"
+    depends_on:
+      - celery
+      - redis
+    networks:
+      - app-network
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollamavolume:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    restart: always
+    networks:
+      - app-network
+
+  celery:
+    build:
+      context: .
+      dockerfile: celery.dockerfile
+    command: celery -A app.services.celery_worker.c_worker worker --concurrency=4 --loglevel=info --pool=solo
+    restart: always
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  flower:
+    image: mher/flower:1.2
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    restart: always
+    ports:
+      - "5555:5555"
+    depends_on:
+      - celery
+    networks:
+      - app-network
+
+volumes:
+  ollamavolume:
+networks:
+  app-network:
+    driver: bridge
