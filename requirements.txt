@@ -166,3 +166,67 @@ uvicorn==0.34.2
     # via fastapi-template (pyproject.toml)
 virtualenv==20.31.2
     # via pre-commit
+
+
+# Core LangChain and Ollama dependencies
+langchain
+langchain-community
+langchain-core
+langchain-ollama
+
+# LangGraph for workflow orchestration
+langgraph
+
+# Text processing and splitting
+tiktoken
+
+# Async support
+aiofiles
+
+# Data handling
+numpy
+pandas
+
+# JSON and data validation
+pydantic
+typing-extensions
+
+# HTTP requests (if needed for Ollama API)
+httpx
+requests
+
+# Development and debugging
+python-dotenv
+
+# Optional: Jupyter support for development
+jupyter
+ipykernel
+
+# Optional: Logging and monitoring
+loguru
+
+# Optional: Progress bars
+tqdm
+
+# Optional: Testing
+pytest
+pytest-asyncio
+
+# Document generation
+markdown
+weasyprint
+
+pyannote.audio
+# Python version requirement (add this as a comment)
+# Python >= 3.8, < 3.12 recommended for best compatibility
+
+git+https://github.com/openai/whisper.git
+ffmpeg-python
+soundfile
+librosa
+
+celery
+redis
+flower
+
+jsonpickle
