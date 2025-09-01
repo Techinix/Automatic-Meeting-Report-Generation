@@ -1,4 +1,4 @@
-# 📝 Meeting Report Generation Solution
+# 📝 Meeting Report Generation Solution 
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-Production-green) ![Docker](https://img.shields.io/badge/Docker-Compose-blue) ![Celery](https://img.shields.io/badge/Celery-Async-orange) ![Redis](https://img.shields.io/badge/Redis-Cache-red)
 
@@ -47,17 +47,6 @@ Processes audio in **three phases**:
 ### 4️⃣ Report Generation
 - Automatically produces a **PDF report** from structured summary for end users  
 
----
-
-## 🛠️ Supporting Services
-
-| Service | Role | Badge |
-|---------|------|-------|
-| Redis | Message broker & caching | 🔴 |
-| In-Memory Cache | Fast access to large datasets | 🟡 |
-| Flower | Celery task monitoring | 🌸 |
-
----
 
 ## 📊 Workflow
 
@@ -112,8 +101,10 @@ Processes audio in **three phases**:
 ```bash
 docker-compose up --build
 ```
-
-7. The API will be available at http://localhost:8000
+2. To run integration tests:
+```bash
+pytest -v 
+```
 
 ## API Documentation
 
@@ -164,3 +155,5 @@ Configure the application via environment variables (e.g., in a `.env` file):
 ### 📝 Ending Note
 
 This solution is designed to be **production-ready, modular, and scalable**, with clear separation between API, services, and background tasks. It demonstrates end-to-end processing of meeting audio files—from **upload** to **structured summary** to **PDF report export**—making it a strong showcase of full-stack AI engineering skills for real-world applications.
+
+- Project elaborated by **Fedi Jaadari**
