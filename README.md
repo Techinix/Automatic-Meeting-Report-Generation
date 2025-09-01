@@ -1,34 +1,104 @@
-# FastAPI Template
+# 📝 Meeting Report Generation Solution
 
-A production-ready FastAPI template with authentication, async database operations, and Docker support.
+![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-Production-green) ![Docker](https://img.shields.io/badge/Docker-Compose-blue) ![Celery](https://img.shields.io/badge/Celery-Async-orange) ![Redis](https://img.shields.io/badge/Redis-Cache-red)
 
-## Features
+**Take-Home Assessment Project – RakamAI AI Engineer**  
 
-- **Modern Python**: Type hints, async/await syntax, and the latest FastAPI features
-- **JWT Authentication**: Complete authentication system with access and refresh tokens
-- **SQLAlchemy with Async**: Fully async database operations using SQLAlchemy 2.0+
-- **Alembic Migrations**: Database schema migrations with Alembic
-- **Role-based Access Control**: User roles with different permission levels (active, staff, superuser)
-- **Docker Support**: Ready-to-use Docker and Docker Compose configurations
-- **Developer-friendly**: Auto-reload, debugging, and development tools
-- **Production-ready**: Configuration for deployment in production environments
+A full-stack solution for generating **structured meeting reports** from audio recordings using **FastAPI**, **Celery**, **Redis**, and **LLMs**.
 
-## Project Structure
+---
+
+## 🚀 Features
+
+- ⚡ **Asynchronous & scalable** task handling  
+- 🗣️ **Parallel transcription & diarization**  
+- 📝 **Structured conversation & summary generation**  
+- 📄 **Automated PDF report export**  
+- 🌐 **Distributed architecture** powered by Redis  
+- 🤖 **LLM-powered summarization** with Ollama  
+- 📊 **Real-time monitoring** via Flower  
+
+---
+
+## 🏗️ Architecture Overview
+
+### 1️⃣ FastAPI Endpoint
+- Accepts audio uploads and validates formats  
+- Submits tasks to **Celery** for asynchronous processing  
+- Provides endpoints to:
+  - Check task status
+  - Retrieve results
+  - Export reports (PDF/Markdown)  
+
+### 2️⃣ Celery Workers
+Processes audio in **three phases**:
+
+1. **Transcription** – Converts speech to text  
+2. **Diarization** – Identifies speakers and segments audio  
+3. **Conversation Mapping** – Merges transcription & speaker info into structured multi-turn conversations  
+
+### 3️⃣ Summarization Agent
+- Uses **Ollama LLM** to generate:
+  - 📝 Concise summary  
+  - ✅ Actions to take  
+  - 🎯 Decisions made  
+  - 📌 Topics discussed  
+
+### 4️⃣ Report Generation
+- Automatically produces a **PDF report** from structured summary for end users  
+
+---
+
+## 🛠️ Supporting Services
+
+| Service | Role | Badge |
+|---------|------|-------|
+| Redis | Message broker & caching | 🔴 |
+| In-Memory Cache | Fast access to large datasets | 🟡 |
+| Flower | Celery task monitoring | 🌸 |
+
+---
+
+## 📊 Workflow
+
+<img src="images/workflow.png" alt="Workflow Diagram" style="border:2px solid black;" width="600"/>
+
+---
+
+## 💻 Tech Stack
+
+![FastAPI](https://img.shields.io/badge/FastAPI-HTTP_API-green) ![Celery](https://img.shields.io/badge/Celery-Tasks-orange) ![Redis](https://img.shields.io/badge/Redis-Cache-red) ![Ollama](https://img.shields.io/badge/Ollama-LLM-purple) ![Pyannote](https://img.shields.io/badge/Pyannote-Diarization-blue) ![Librosa](https://img.shields.io/badge/Librosa-Audio-yellow)
+
+---
+
+## 📂 Project Structure
 
 ```
 .
 ├── alembic/                 # Database migrations
 ├── app/                     # Main application package
 │   ├── api/                 # API endpoints
+        ├── summarize.py          # summarization endpoint
+        └── ..
 │   ├── core/                # Core functionality (config, security)
 │   ├── db/                  # Database session and base
 │   ├── models/              # SQLAlchemy models
 │   ├── schemas/             # Pydantic schemas
+        ├── langchain.py          # langchain pydantic schemas
+        └── ..
 │   ├── services/            # Business logic
+        ├── transcribe/           # transcription task
+│       ├── diarize/              # diarization task
+│       ├── conversation/         # conversation creation task
+│       ├── summarize/            # summarization task
+│       ├── cache.py              # cache store logic
+│       ├── celery_worker.py      # celery worker logic
+│       └── ..
 │   └── utils/               # Utility functions
 ├── docker-compose.yml       # Docker Compose for production
 ├── docker-compose.dev.yml   # Docker Compose for development
-├── Dockerfile               # Docker configuration
+├── Dockerfile               # Docker configuration for app
+├── celery.dockerfile        # Docker configuration for celery worker
 ├── alambic.ini              # Alembic configuration
 ├── main.py                  # Application entry point
 ├── pyproject.toml           # Project dependencies and metadata
@@ -36,73 +106,12 @@ A production-ready FastAPI template with authentication, async database operatio
 └── start-dev.sh             # Development startup script
 ```
 
-## Requirements
+## How to Run
 
-- Python 3.11+
-- Docker (optional)
-
-## Installation
-
-### Using Docker (recommended)
-
-1. Clone the repository:
-   ```bash
-   git clone <your-repo-url>
-   cd fastapi-template
-   ```
-
-2. Start the application with Docker Compose:
-   ```bash
-   # For development
-   docker-compose -f docker-compose.dev.yml up --build
-
-   # For production
-   docker-compose up --build
-   ```
-
-3. The API will be available at http://localhost:8000
-
-### Local Development
-
-1. Clone the repository:
-   ```bash
-   git clone <your-repo-url>
-   cd fastapi-template
-   ```
-
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -e ".[dev]"
-   ```
-
-4. Set up environment variables (create a `.env` file):
-   ```
-   DEBUG=true
-   SECRET_KEY=your-secret-key
-   DB_ENGINE=sqlite  # or postgresql
-   # For PostgreSQL, add these:
-   # DB_USER=postgres
-   # DB_PASSWORD=password
-   # DB_HOST=localhost
-   # DB_PORT=5432
-   # DB_NAME=app
-   ```
-
-5. Run migrations:
-   ```bash
-   alembic upgrade head
-   ```
-
-6. Start the application:
-   ```bash
-   uvicorn main:app --reload
-   ```
+1. Start the services using Docker Compose:
+```bash
+docker-compose up --build
+```
 
 7. The API will be available at http://localhost:8000
 
@@ -113,90 +122,45 @@ Once the application is running, you can access:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-## API Endpoints
+## 🔑 API Endpoints
 
-### Authentication
+### Summarization
 
-- `POST /auth/signup` - Register a new user
-- `POST /auth/login` - Authenticate and get tokens
-- `POST /auth/token/refresh` - Refresh access token
-- `POST /auth/logout` - Logout user
-- `GET /auth/me` - Get current user information
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST   | `/summarize/query` | Upload audio file for summarization |
+| GET    | `/summarize/get_result` | Check task status |
+| GET    | `/summarize/export/pdf` | Export result as PDF |
 
 ### System
 
-- `GET /health` - Health check endpoint
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET    | `/health` | Health check endpoint |
 
-## Configuration
+---
 
-The application is configured through environment variables which can be set in a `.env` file:
+## ⚙️ Configuration
+
+Configure the application via environment variables (e.g., in a `.env` file):
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DEBUG` | Enable debug mode | `true` |
-| `SECRET_KEY` | JWT secret key | `supersecretkey` |
-| `ALGORITHM` | JWT algorithm | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token expiration time | `60` |
-| `REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token expiration time | `7` |
-| `CORS_ORIGINS` | CORS allowed origins | `["*"]` |
-| `DB_ENGINE` | Database engine | `sqlite` |
-| `DB_USER` | Database user | `""` |
-| `DB_PASSWORD` | Database password | `""` |
-| `DB_HOST` | Database host | `""` |
-| `DB_PORT` | Database port | `""` |
-| `DB_NAME` | Database name | `app.db` |
+| `HF_TOKEN` | JWT secret key | `supersecretkey` |
+| `DIARIZATION_MODEL` | Diarization model | `pyannote/speaker-diarization-3.1` |
+| `WHISPER_SIZE` | Whisper model size | `small` |
+| `SAMPLE_RATE` | Audio sample rate | `16000` |
+| `MODEL_NAME` | LLM model name | `qwen3:1.7b` |
+| `OLLAMA_URL` | Ollama service URL | `http://ollama:11434` |
+| `REDIS_HOST` | Redis host | `redis` |
+| `REDIS_PORT` | Redis port | `6379` |
+| `REDIS_CACHE_DB` | Redis cache DB index | `0` |
+| `REDIS_BROKER_DB` | Redis broker DB index | `1` |
+| `OUTPUT_FOLDER` | Folder to store generated PDFs | `./output` |
 
-## Development
 
-### Running Tests
+---
 
-```bash
-pytest
-```
+### 📝 Ending Note
 
-### Code Quality Tools
-
-The project uses several tools to ensure code quality:
-
-- **Black**: Code formatter
-- **isort**: Import sorter
-- **mypy**: Static type checking
-- **pre-commit**: Git hooks for code quality checks
-
-To set up pre-commit hooks:
-
-```bash
-pre-commit install
-```
-
-## Database
-
-The template supports SQLite for development and PostgreSQL for production. The default is SQLite.
-
-### Migrations
-
-To create a new migration after changing models:
-
-```bash
-alembic revision --autogenerate -m "Description of changes"
-```
-
-To apply migrations:
-
-```bash
-alembic upgrade head
-```
-
-## Docker
-
-The project includes Docker configurations for both development and production:
-
-- `docker-compose.yml`: Production setup
-- `docker-compose.dev.yml`: Development setup with hot-reload
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b ft/my-feature`
-3. Commit your changes: `git commit -m 'Add my feature'`
-4. Push to the branch: `git push origin ft/my-feature`
+This solution is designed to be **production-ready, modular, and scalable**, with clear separation between API, services, and background tasks. It demonstrates end-to-end processing of meeting audio files—from **upload** to **structured summary** to **PDF report export**—making it a strong showcase of full-stack AI engineering skills for real-world applications.
