@@ -2,8 +2,6 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-Production-green) ![Docker](https://img.shields.io/badge/Docker-Compose-blue) ![Celery](https://img.shields.io/badge/Celery-Async-orange) ![Redis](https://img.shields.io/badge/Redis-Cache-red)
 
-**Take-Home Assessment Project – RakamAI AI Engineer**  
-
 A full-stack solution for generating **structured meeting reports** from audio recordings using **FastAPI**, **Celery**, **Redis**, and **LLMs**.
 
 ---
