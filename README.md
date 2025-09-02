@@ -154,4 +154,3 @@ Configure the application via environment variables (e.g., in a `.env` file):
 
 This solution is designed to be **production-ready, modular, and scalable**, with clear separation between API, services, and background tasks. It demonstrates end-to-end processing of meeting audio files—from **upload** to **structured summary** to **PDF report export**—making it a strong showcase of full-stack AI engineering skills for real-world applications.
 
-- Project elaborated by **Fedi Jaadari**
