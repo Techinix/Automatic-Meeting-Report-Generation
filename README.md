@@ -4,6 +4,9 @@
 
 A full-stack solution for generating **structured meeting reports** from audio recordings using **FastAPI**, **Celery**, **Redis**, and **LLMs**.
 
+[View Demo](https://1drv.ms/f/c/06B1F6E174C6D6D9/EsRUpJ4b-BRKhNdrDmjUhVUB04W7E-poZNarFesncu0gZA?e=yARlZP)
+
+
 ---
 
 ## 🚀 Features
