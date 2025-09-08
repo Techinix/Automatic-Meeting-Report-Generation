@@ -97,17 +97,26 @@ Processes audio in **three phases**:
 ```
 
 ## How to Run
+### Option 1: Using Docker Compose
 
-1. Start the services using Docker Compose:
+Start all services with:
 ```bash
 docker-compose up --build
 ```
-2. Start the services using Kubernetes:
+### Option 2: Using Kubernetes
+The instruction below will do the following :
+1. setup kind and use it to create a local kubernetes cluster.
+2. setup kubectl and configure it to use the kind cluster.
+3. build the required docker images and push them to the cluster.
+4. apply the k8s manifests.
+5. apply port forwarding to expose the web service to the world .
+
+Start all services with:
 ```bash
-kubectl apply -f manifests/.
-kubectl port-forward service/web 8000:8000
+chmod +x setup-k8s.sh
+./setup-k8s.sh
 ```
-2. To run integration tests:
+### To run integration tests:
 ```bash
 pytest -v 
 ```
