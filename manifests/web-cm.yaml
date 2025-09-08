@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-env
+  namespace: default
+data:
+  .env: |
+    HF_TOKEN="<HF Token with access to pyannote/speaker-diarization-3.1 and pyannote/segmentation-3.0>" 
+    DIARIZATION_MODEL="pyannote/speaker-diarization-3.1"
+    WHISPER_SIZE="small"
+    SAMPLE_RATE=16000
+    MODEL_NAME="qwen3:1.7b"
+    OLLAMA_URL="http://ollama:11434"
+    OUTPUT_FOLDER="./output"
+    REDIS_HOST=redis
+    REDIS_PORT=6379
+    REDIS_BROKER_DB=0
+    REDIS_CACHE_DB=1

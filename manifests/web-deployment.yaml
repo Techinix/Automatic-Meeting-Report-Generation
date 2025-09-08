@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.dev.yml convert
+    kompose.version: 1.37.0 (fb0539e64)
+  labels:
+    io.kompose.service: web
+  name: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: web
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f docker-compose.dev.yml convert
+        kompose.version: 1.37.0 (fb0539e64)
+      labels:
+        io.kompose.service: web
+    spec:
+      containers:
+      - name : web
+        image : web:0.1.0
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "/app/start-dev.sh"]
+        securityContext:
+          runAsUser: 0 
+        env:
+          - name: DEBUG
+            value: "true"
+        ports:
+            - containerPort: 8000
+        volumeMounts:
+          - name: web-env
+            mountPath: /app/.env   
+            subPath: .env          
+      volumes:
+        - name: web-env
+          configMap:
+            name: web-env

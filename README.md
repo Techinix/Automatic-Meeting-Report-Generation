@@ -102,6 +102,11 @@ Processes audio in **three phases**:
 ```bash
 docker-compose up --build
 ```
+2. Start the services using Kubernetes:
+```bash
+kubectl apply -f manifests/.
+kubectl port-forward service/web 8000:8000
+```
 2. To run integration tests:
 ```bash
 pytest -v 

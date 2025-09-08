@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.dev.yml convert
+    kompose.version: 1.37.0 (fb0539e64)
+  labels:
+    io.kompose.service: ollama
+  name: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: ollama
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f docker-compose.dev.yml convert
+        kompose.version: 1.37.0 (fb0539e64)
+      labels:
+        io.kompose.service: ollama
+    spec:
+      containers:
+        - env:
+            - name: OLLAMA_HOST
+              value: 0.0.0.0
+            - name: OLLAMA_KEEP_ALIVE
+              value: 24h
+          image: ollama/ollama
+          name: ollama
+          ports:
+            - containerPort: 11434
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /root/.ollama
+              name: ollamavolume
+      restartPolicy: Always
+      volumes:
+        - name: ollamavolume
+          persistentVolumeClaim:
+            claimName: ollamavolume
