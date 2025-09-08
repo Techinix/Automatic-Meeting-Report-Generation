@@ -138,7 +138,7 @@ Configure the application via environment variables (e.g., in a `.env` file):
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `HF_TOKEN` | JWT secret key | `supersecretkey` |
+| `HF_TOKEN` | HF Token with access to pyannote/speaker-diarization-3.1 and pyannote/segmentation-3.0 | `supersecretkey` |
 | `DIARIZATION_MODEL` | Diarization model | `pyannote/speaker-diarization-3.1` |
 | `WHISPER_SIZE` | Whisper model size | `small` |
 | `SAMPLE_RATE` | Audio sample rate | `16000` |
@@ -146,8 +146,8 @@ Configure the application via environment variables (e.g., in a `.env` file):
 | `OLLAMA_URL` | Ollama service URL | `http://ollama:11434` |
 | `REDIS_HOST` | Redis host | `redis` |
 | `REDIS_PORT` | Redis port | `6379` |
-| `REDIS_CACHE_DB` | Redis cache DB index | `0` |
-| `REDIS_BROKER_DB` | Redis broker DB index | `1` |
+| `REDIS_BROKER_DB` | Redis broker DB index | `0` |
+| `REDIS_CACHE_DB` | Redis cache DB index | `1` |
 | `OUTPUT_FOLDER` | Folder to store generated PDFs | `./output` |
 
 
