@@ -40,7 +40,7 @@ services:
     build:
       context: .
       dockerfile: celery.dockerfile
-    command: celery -A app.services.celery_worker.c_worker worker --concurrency=4 --loglevel=info --pool=solo
+    command: celery -A app.services.celery_worker.c_worker worker  --loglevel=info --pool=solo
     restart: always
     depends_on:
       - redis
