@@ -32,10 +32,16 @@ async def query(file: UploadFile , user: AuthUserDep, db: DBSessionDep
         return {"status": "Invalid audio file"}
     
     job_id = str(uuid.uuid4())
-    job = Job(id=job_id, user_id=user.id)
+    audio_key = f"user_{user.id}/{job_id}/audio.wav"
+    report_key = f"user_{user.id}/{job_id}/report.pdf"
 
-    audio_key = f"user_{user.id}/{job.id}/audio.wav"
-    bytes_key = S3_CACHE.save(audio_bytes, audio_key)
+    job = Job(
+        id=job_id,
+        user_id=user.id,
+        audio_key=audio_key,
+        report_key=report_key
+    )
+    bytes_key = S3_CACHE.save(audio_bytes, job.audio_key)
     
     task = chord(
         [
@@ -80,8 +86,8 @@ async def export_pdf(job_id: str, user: AuthUserDep, db: DBSessionDep) -> Dict[s
     key = task.get()
     result = REDIS_CACHE.load(key)
     pdf_bytes = DOC_GEN.generate_pdf(result)
-    pdf_key = f"user_{user.id}/{job.id}/report.pdf"
-    key = S3_CACHE.save(pdf_bytes, pdf_key)
+    
+    key = S3_CACHE.save(pdf_bytes, job.report_key)
     url = S3_CACHE.get_presigned_url(key, expires_in=3600) 
 
     return {"status": task.state, "url": url}
