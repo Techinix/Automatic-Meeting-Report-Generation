@@ -1,11 +1,16 @@
 import jsonpickle
 import librosa
 import io
-from fastapi import APIRouter, status, HTTPException, UploadFile, File
+import uuid
+
+from fastapi import APIRouter, status, HTTPException, UploadFile
 from typing import Dict, Any
 from app.services.cache import REDIS_CACHE, S3_CACHE
 from app.services.celery_worker import c_worker
 from app.services.summarize.utils import DocumentGenerator
+from app.api.deps import AuthUserDep, DBSessionDep
+from app.models.job import Job
+from sqlalchemy.future import select
 from celery import chord, signature
 from celery.result import AsyncResult
 
@@ -14,7 +19,8 @@ DOC_GEN = DocumentGenerator()
 
 
 @router.post("/query", status_code=status.HTTP_200_OK, summary="Upload audio for summarization")
-async def query(file: UploadFile = File(...)) -> Dict[str, str]:
+async def query(file: UploadFile , user: AuthUserDep, db: DBSessionDep
+) -> Dict[str, str]:
     """
     Accepts an audio file and submits it for summarization.
     """
@@ -24,9 +30,13 @@ async def query(file: UploadFile = File(...)) -> Dict[str, str]:
         _, _ = librosa.load(io.BytesIO(audio_bytes))
     except Exception:
         return {"status": "Invalid audio file"}
+    
+    job_id = str(uuid.uuid4())
+    job = Job(id=job_id, user_id=user.id)
 
-    bytes_key = S3_CACHE.save(audio_bytes)
-
+    audio_key = f"user_{user.id}/{job.id}/audio.wav"
+    bytes_key = S3_CACHE.save(audio_bytes, audio_key)
+    
     task = chord(
         [
             signature(
@@ -41,34 +51,26 @@ async def query(file: UploadFile = File(...)) -> Dict[str, str]:
         signature("app.services.conversation.tasks.create_conversation") |
         signature("app.services.summarize.tasks.summarize_text")
     ).delay()
+    
+    job.task_id = task.id
 
-    return {"id": task.id, "status": task.state}
+    db.add(job)
+    await db.commit()
+    await db.refresh(job)
 
-@router.get("/task_result")
-def task_result(task_id: str) -> Dict[str, Any]:
-    """
-    Returns the status and result of a Celery task.
-    """
-    task = AsyncResult(task_id, app=c_worker)
-    state = task.state
-    result = task.result
-
-    if state == "SUCCESS":
-        key = task.get()
-        result = REDIS_CACHE.load(key)
-        result = jsonpickle.encode(result)
-    elif state == "FAILURE":
-        result = str(result)
-
-    return {"status": state, "result": result}
-
+    return {"id": job_id, "status": task.state}
 
 @router.get("/export_pdf")
-def export_pdf(task_id: str) -> Dict[str, Any]:
+async def export_pdf(job_id: str, user: AuthUserDep, db: DBSessionDep) -> Dict[str, Any]:
     """
     Generates a PDF 
     """
-    task = AsyncResult(task_id, app=c_worker)
+    result = await db.execute(select(Job).filter(Job.id == job_id, Job.user_id == user.id))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(404, "Job not found")
+
+    task = AsyncResult(job.task_id, app=c_worker)
     if task.state != "SUCCESS":
         raise HTTPException(
             status_code=400,
@@ -78,7 +80,8 @@ def export_pdf(task_id: str) -> Dict[str, Any]:
     key = task.get()
     result = REDIS_CACHE.load(key)
     pdf_bytes = DOC_GEN.generate_pdf(result)
-    key = S3_CACHE.save(pdf_bytes)
+    pdf_key = f"user_{user.id}/{job.id}/report.pdf"
+    key = S3_CACHE.save(pdf_bytes, pdf_key)
     url = S3_CACHE.get_presigned_url(key, expires_in=3600) 
 
     return {"status": task.state, "url": url}
