@@ -162,7 +162,14 @@ Configure the application via environment variables (e.g., in a `.env` file):
 | `REDIS_PORT` | Redis port | `6379` |
 | `REDIS_BROKER_DB` | Redis broker DB index | `0` |
 | `REDIS_CACHE_DB` | Redis cache DB index | `1` |
-| `OUTPUT_FOLDER` | Folder to store generated PDFs | `./output` |
+| `AWS_ACCESS_KEY_ID` | AWS access key ID  | `minioadmin` |
+| `AWS_SECRET_ACCESS_KEY` |  AWS secret access key | `minioadmin` |
+| `S3_BUCKET` | Name of the S3 bucket  | `reports-bucket` |
+| `S3_REGION` | AWS Region | `us-east-1` |
+| `S3_ENDPOINT_PROTOCOL` | Protocol for S3 endpoint (http/https) | `http` |
+| `S3_ENDPOINT_HOST` | Hostname of the S3 / MinIO endpoint | `minio` |
+| `S3_ENDPOINT_PORT` | Port of the S3 / MinIO endpoint | `9000` |
+
 
 
 ---
