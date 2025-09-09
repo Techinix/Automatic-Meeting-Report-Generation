@@ -30,5 +30,5 @@ kind load docker-image web:0.1.0 celery:0.1.0
 kubectl apply -f manifests/.
 
 # port forward the web service
-
+sleep 10
 kubectl port-forward service/web 8000:8000

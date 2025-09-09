@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, START, END
-from app.services.cache import CACHE
+from app.services.cache import REDIS_CACHE
 from app.services.celery_worker import c_worker
 from app.core.config import settings
 from app.services.summarize.utils import pull_model
@@ -71,7 +71,7 @@ def summarize_text(conversation_key: str) -> str:
     Returns:
         key (str): Cache key containing summarization result.
     """
-    conversation = CACHE.load(conversation_key)
+    conversation = REDIS_CACHE.load(conversation_key)
 
     def to_langchain_messages(turns: List[Any]) -> List[Any]:
         messages = [("system", SUMMARIZATION_PROMPT)]
@@ -91,5 +91,5 @@ def summarize_text(conversation_key: str) -> str:
         "status": "success"
     }
 
-    key: str = CACHE.save(result)
+    key: str = REDIS_CACHE.save(result)
     return key

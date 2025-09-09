@@ -4,7 +4,7 @@ import torch
 from pyannote.audio import Pipeline
 from app.core.config import settings
 from app.services.celery_worker import c_worker
-from app.services.cache import CACHE
+from app.services.cache import REDIS_CACHE, S3_CACHE
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -26,8 +26,8 @@ def diarize(bytes_key: str) -> str:
     Returns:
         key (str): Cache key of the diarization result.
     """
-    audio_bytes: bytes = CACHE.load(bytes_key)
+    audio_bytes: bytes = S3_CACHE.load(bytes_key)
     buffer: io.BytesIO = io.BytesIO(audio_bytes)
     diarization_result: Any = pipeline(buffer)
-    key: str = CACHE.save(diarization_result)
+    key: str = REDIS_CACHE.save(diarization_result)
     return key

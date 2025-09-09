@@ -2,21 +2,19 @@ import jsonpickle
 import librosa
 import io
 from fastapi import APIRouter, status, HTTPException, UploadFile, File
-from fastapi.responses import FileResponse
 from typing import Dict, Any
-from app.core.config import settings
-from app.services.cache import CACHE
+from app.services.cache import REDIS_CACHE, S3_CACHE
 from app.services.celery_worker import c_worker
 from app.services.summarize.utils import DocumentGenerator
 from celery import chord, signature
 from celery.result import AsyncResult
 
 router = APIRouter()
-DOC_GEN = DocumentGenerator(settings.OUTPUT_FOLDER)
+DOC_GEN = DocumentGenerator()
 
 
 @router.post("/query", status_code=status.HTTP_200_OK, summary="Upload audio for summarization")
-async def summarization_endpoint(file: UploadFile = File(...)) -> Dict[str, str]:
+async def query(file: UploadFile = File(...)) -> Dict[str, str]:
     """
     Accepts an audio file and submits it for summarization.
     """
@@ -27,7 +25,7 @@ async def summarization_endpoint(file: UploadFile = File(...)) -> Dict[str, str]
     except Exception:
         return {"status": "Invalid audio file"}
 
-    bytes_key = CACHE.save(audio_bytes)
+    bytes_key = S3_CACHE.save(audio_bytes)
 
     task = chord(
         [
@@ -46,8 +44,8 @@ async def summarization_endpoint(file: UploadFile = File(...)) -> Dict[str, str]
 
     return {"id": task.id, "status": task.state}
 
-@router.get("/result")
-def get_result(task_id: str) -> Dict[str, Any]:
+@router.get("/task_result")
+def task_result(task_id: str) -> Dict[str, Any]:
     """
     Returns the status and result of a Celery task.
     """
@@ -57,7 +55,7 @@ def get_result(task_id: str) -> Dict[str, Any]:
 
     if state == "SUCCESS":
         key = task.get()
-        result = CACHE.load(key)
+        result = REDIS_CACHE.load(key)
         result = jsonpickle.encode(result)
     elif state == "FAILURE":
         result = str(result)
@@ -65,8 +63,8 @@ def get_result(task_id: str) -> Dict[str, Any]:
     return {"status": state, "result": result}
 
 
-@router.get("/export/pdf")
-def export_pdf(task_id: str, filename: str) -> FileResponse:
+@router.get("/export_pdf")
+def export_pdf(task_id: str) -> Dict[str, Any]:
     """
     Generates a PDF 
     """
@@ -78,7 +76,9 @@ def export_pdf(task_id: str, filename: str) -> FileResponse:
         )
 
     key = task.get()
-    result = CACHE.load(key)
-    pdf_path = DOC_GEN.generate_pdf(result, f"{filename}.pdf")
+    result = REDIS_CACHE.load(key)
+    pdf_bytes = DOC_GEN.generate_pdf(result)
+    key = S3_CACHE.save(pdf_bytes)
+    url = S3_CACHE.get_presigned_url(key, expires_in=3600) 
 
-    return FileResponse(pdf_path, media_type="application/pdf", filename=f"{filename}.pdf")
+    return {"status": task.state, "url": url}

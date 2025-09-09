@@ -22,9 +22,8 @@ def pull_model(model_name: str, host: str) -> None:
 class DocumentGenerator:
     """Handles generation of PDF documents from summarization results."""
     
-    def __init__(self, output_dir: str = "./output"):
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(exist_ok=True)
+    def __init__(self):
+      
         self.basic_colors = [
             "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
             "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
@@ -32,28 +31,24 @@ class DocumentGenerator:
         ]
   
     
-    def generate_pdf(self, result: Dict[str, Any], filename: str = None) -> str:
+    def generate_pdf(self, result: Dict[str, Any]) -> bytes:
         """Generate PDF document from summarization result."""
         
-        if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"summary_{timestamp}.pdf"
-        
-        filepath = self.output_dir / filename
-        
-        self._create_pdf_weasyprint(result, str(filepath))
-        
-        return str(filepath)
+        pdf_bytes = self._create_pdf_weasyprint(result)
+    
+        return pdf_bytes
    
     
-    def _create_pdf_weasyprint(self, result: Dict[str, Any], filepath: str):
+    def _create_pdf_weasyprint(self, result: Dict[str, Any]):
         """Create PDF using WeasyPrint (HTML to PDF)."""
         
         # Generate HTML content
         html_content = self._create_html_content(result)
         
         # Convert to PDF
-        weasyprint.HTML(string=html_content).write_pdf(filepath)
+        bytes = weasyprint.HTML(string=html_content).write_pdf()
+
+        return bytes
     
     def _create_html_content(self, result: Dict[str, Any]) -> str:
         """Create HTML content for WeasyPrint PDF generation."""

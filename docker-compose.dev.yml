@@ -12,7 +12,7 @@ services:
       - celery
       - redis
     networks:
-      - app-network
+      - shared_net
     volumes:
       - .:/app  # <-- bind mount local directory
 
@@ -28,13 +28,13 @@ services:
       - OLLAMA_HOST=0.0.0.0
     restart: unless-stopped
     networks:
-      - app-network
+      - shared_net
 
   redis:
     image: redis:alpine
     restart: always
     networks:
-      - app-network
+      - shared_net
 
   celery:
     build:
@@ -45,7 +45,7 @@ services:
     depends_on:
       - redis
     networks:
-      - app-network
+      - shared_net
 
   flower:
     image: mher/flower:1.2
@@ -57,10 +57,26 @@ services:
     depends_on:
       - celery
     networks:
-      - app-network
+      - shared_net
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data
+    volumes:
+      - minio_data:/data
+    networks:
+      - shared_net
+
+
 
 volumes:
   ollamavolume:
+  minio_data:
 networks:
-  app-network:
+  shared_net:
     driver: bridge

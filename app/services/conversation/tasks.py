@@ -2,7 +2,7 @@ from typing import List, Tuple, Any
 from app.schemas.langchain import Turn, Conversation
 from pyannote.core import Segment
 from app.services.celery_worker import c_worker
-from app.services.cache import CACHE
+from app.services.cache import REDIS_CACHE
 
 
 def get_text_with_timestamp(segments: List[dict]) -> List[Tuple[Segment, str]]:
@@ -148,8 +148,8 @@ def create_conversation(keys: List[str], use_word_timestamps: bool = True) -> st
     Returns:
         str: Cache key of the created Conversation object.
     """
-    segments = CACHE.load(keys[0])
-    diarization_result = CACHE.load(keys[1])
+    segments = REDIS_CACHE.load(keys[0])
+    diarization_result = REDIS_CACHE.load(keys[1])
     conversation = map_chunks(segments, diarization_result, use_word_timestamps)
-    key = CACHE.save(conversation)
+    key = REDIS_CACHE.save(conversation)
     return key

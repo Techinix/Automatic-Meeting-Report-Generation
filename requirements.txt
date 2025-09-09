@@ -230,3 +230,4 @@ redis
 flower
 
 jsonpickle
+boto3
