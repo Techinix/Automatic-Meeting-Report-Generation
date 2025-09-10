@@ -14,6 +14,12 @@ from sqlalchemy.future import select
 from celery import chord, signature
 from celery.result import AsyncResult
 
+from app.utils.logging import setup_logging
+import structlog
+
+setup_logging()
+logger = structlog.get_logger("fastapi-app")
+
 router = APIRouter()
 DOC_GEN = DocumentGenerator()
 
@@ -31,6 +37,12 @@ async def query(file: UploadFile , user: AuthUserDep, db: DBSessionDep
     except Exception:
         return {"status": "Invalid audio file"}
     
+    size_mb = len(audio_bytes) / (1024 * 1024)
+    logger.info(
+        "job_request",
+        user_id=user.id,
+        audio_size=f"{size_mb:.2f} MB",
+    )
     job_id = str(uuid.uuid4())
     audio_key = f"user_{user.id}/{job_id}/audio.wav"
     report_key = f"user_{user.id}/{job_id}/report.pdf"
@@ -57,13 +69,23 @@ async def query(file: UploadFile , user: AuthUserDep, db: DBSessionDep
         signature("app.services.conversation.tasks.create_conversation") |
         signature("app.services.summarize.tasks.summarize_text")
     ).delay()
-    
-    job.task_id = task.id
 
+    logger.info(
+        "job_submit",
+        user_id=user.id,
+        job_id=job.id,
+        audio_size=f"{size_mb:.2f} MB",
+        task_id=task.id,
+        input_key=audio_key,
+        output_key=report_key,
+    )
+
+    job.task_id = task.id
     db.add(job)
     await db.commit()
     await db.refresh(job)
-
+    
+    
     return {"id": job_id, "status": task.state}
 
 @router.get("/export_pdf")
@@ -71,6 +93,11 @@ async def export_pdf(job_id: str, user: AuthUserDep, db: DBSessionDep) -> Dict[s
     """
     Generates a PDF 
     """
+    logger.info(
+        "export_request",
+        user_id=user.id,
+        job_id=job_id,
+    )
     result = await db.execute(select(Job).filter(Job.id == job_id, Job.user_id == user.id))
     job = result.scalar_one_or_none()
     if not job:
@@ -89,5 +116,12 @@ async def export_pdf(job_id: str, user: AuthUserDep, db: DBSessionDep) -> Dict[s
     
     key = S3_CACHE.save(pdf_bytes, job.report_key)
     url = S3_CACHE.get_presigned_url(key, expires_in=3600) 
-
+    logger.info(
+        "export_success",
+        user_id=user.id,
+        job_id=job.id,
+        task_id=task.id,
+        input_key=job.audio_key,
+        output_key=job.report_key,
+    )
     return {"status": task.state, "url": url}

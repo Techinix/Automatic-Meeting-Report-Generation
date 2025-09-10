@@ -231,3 +231,5 @@ flower
 
 jsonpickle
 boto3
+
+structlog

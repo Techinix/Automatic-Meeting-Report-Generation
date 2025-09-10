@@ -12,9 +12,9 @@ services:
       - celery
       - redis
     networks:
-      - shared_net
+      - shared-net
     volumes:
-      - .:/app  # <-- bind mount local directory
+      - .:/app  
 
   ollama:
     image: ollama/ollama
@@ -28,24 +28,24 @@ services:
       - OLLAMA_HOST=0.0.0.0
     restart: unless-stopped
     networks:
-      - shared_net
+      - shared-net
 
   redis:
     image: redis:alpine
     restart: always
     networks:
-      - shared_net
+      - shared-net
 
   celery:
     build:
       context: .
       dockerfile: celery.dockerfile
-    command: celery -A app.services.celery_worker.c_worker worker  --loglevel=info --pool=solo
+    command: celery -A app.services.celery_worker.c_worker worker --loglevel=info --pool=solo
     restart: always
     depends_on:
       - redis
     networks:
-      - shared_net
+      - shared-net
 
   flower:
     image: mher/flower:1.2
@@ -57,7 +57,7 @@ services:
     depends_on:
       - celery
     networks:
-      - shared_net
+      - shared-net
   minio:
     image: minio/minio
     container_name: minio
@@ -70,13 +70,57 @@ services:
     volumes:
       - minio_data:/data
     networks:
-      - shared_net
+      - shared-net
 
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - loki-data:/loki
+    networks:
+      - shared-net
+    restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - loki
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./logging/grafana/provisioning:/etc/grafana/provisioning:ro
+    restart: unless-stopped
+    networks:
+      - shared-net
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./logging/promtail-config.yml:/etc/promtail/config.yml:ro
+    command: ["-config.file=/etc/promtail/config.yml"]
+    networks:
+      - shared-net
+    restart: unless-stopped
+    depends_on:
+      - loki
 
 volumes:
   ollamavolume:
   minio_data:
+  loki-data:
+  grafana-data:
+  
 networks:
-  shared_net:
+  shared-net:
     driver: bridge
